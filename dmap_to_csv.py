@@ -11,8 +11,9 @@ import os
 import string
 import numpy as np
 
-def fetch_concat(ctr_date, localdirfmt, localdict, tmpdir,
-                 fnamefmt, remove_extra_file=True):
+def fetch_concat(ctr_date, localdirfmt, localdict, tmpdir, fnamefmt,
+		 remove_extra_file=True, median_filter=False,
+		 path_to_filter='./fitexfilter'):
 
     """ fetches files for a single day given by ctr_date,
     then unzips and concatenates them into a single file.
@@ -35,6 +36,11 @@ def fetch_concat(ctr_date, localdirfmt, localdict, tmpdir,
         or fnamefmt = '{date}.{hour}......{radar}.{ftype}')	
     remove_extra_file : bool
         If set to True, files other than the concatenated file will be removed
+    median_filter : bool
+        If set to True, data will be filtered by a boxcar median filtere
+    path_to_filter : full path to the boxcar filter binary file, including
+	the file name.
+
     
     Returns
     -------
@@ -62,7 +68,7 @@ def fetch_concat(ctr_date, localdirfmt, localdict, tmpdir,
     # check if we have found files
     if len(file_list) != 0:
         # concatenate the files into a single file
-        print('Concatenating all the files in to one')
+        print('Concatenating all the files into one')
 
         # choose a temp file name with time span info for cacheing
         if (channel is None) or (channel == "."):
@@ -91,8 +97,52 @@ def fetch_concat(ctr_date, localdirfmt, localdict, tmpdir,
                 #os.system('rm ' + fn+".gz")
     else:
         fname = None
+
+    # Boxcar filter
+    if median_filter:
+	fname = boxcar_filter(fname, path_to_filter)
         
     return fname
+
+def boxcar_filter(fname, path_to_filter):
+    """Does boxcar filtering to data in a file
+
+    Parameters
+    -----------
+    fname : str
+        Full path of a file (fitacf, fitex).
+    path_to_filter : full path to the boxcar filter binary file, including
+	the file name.
+
+    Returns
+    -------
+    ffname : str
+        Full path of a data file that is boxcar median filtered. 
+	The filtered file name will be fname+"f" 
+    
+    """
+
+    if fname is not None:
+        # extract the data type (e.g., fitacf, fitex, etc.) from fname
+        ftype = fname.split(".")[-1]
+        if not ftype+'f' in fname:
+            try:
+                print("boxcar filtering the data")
+                # do boxcar filtering
+                ffname = fname + 'f'
+                command = path_to_filter + ' ' + fname + ' > ' + ffname
+                logging.debug("performing: {:s}".format(command))
+                os.system(command)
+                logging.debug("done filtering")
+            except Exception, e:
+                estr = 'problem filtering file, using the unfiltered one'
+                logging.warning(estr)
+        else:
+            print("file " + fname + " exists")
+            ffname = fname
+    else:
+        ffname = None
+    return ffname
 
 # run the code
 def main():
@@ -106,17 +156,22 @@ def main():
     #rad = "ade"
     channel = "."
     ftype = "fitacf"
+
     remove_extra_file = True 
+    median_filter=False
+    path_to_filter = './fitexfilter'
+
     localdirfmt = "/sd-data/{year}/{ftype}/{radar}/"
     localdict = {"ftype" : ftype, "radar" : rad, "channel" : channel}
     tmpdir = "./data/tmp/"
     fnamefmt = ['{date}.{hour}......{radar}.{channel}.{ftype}',\
                 '{date}.{hour}......{radar}.{ftype}']
 
-    # prepare the data
+    # Fetch and concatenate files
     fname = fetch_concat(ctr_date, localdirfmt, localdict, tmpdir, fnamefmt,
-                         remove_extra_file=remove_extra_file)
-
+                         remove_extra_file=remove_extra_file,
+			 median_filter=median_filter,
+			 path_to_filter=path_to_filter)
     return fname
 
 if __name__ == "__main__":
