@@ -149,7 +149,7 @@ def boxcar_filter(fname, path_to_filter):
     return ffname
 
 
-def dmap_to_csv(fname, tmpdir, stime=None, etime=None, sep="|",
+def dmap_to_csv(fname, stime, etime=None, sep="|",
                 fileType="fitacf"):
 
     """Reads data from the dmap file and writes it to
@@ -157,10 +157,16 @@ def dmap_to_csv(fname, tmpdir, stime=None, etime=None, sep="|",
 
     Parameter
     ---------
-    tbands : list
-        a list of the frequency bands to separate data into
-    bmnum_list : list, default to None
-        The beam numbers.
+    fname : str
+        Full path of a dmap file (fitacf, fitex).
+    stime : datetime.datetime
+        The start time of interest
+    etime : datetime.datetime
+        The end time of interest
+    sep : str
+        Delimiter to use
+    fileType : str
+        SuperDARN fit data type (e.g., fitacf)
 
     Returns
     -------
@@ -298,8 +304,11 @@ def main():
 
     # input parameters
     ctr_date = dt.datetime(2012,12,31)
-    stime = dt.datetime(2012,12,31)
-    etime = dt.datetime(2012,12,31, 12, 0)
+    stime = ctr_date
+    etime = None
+    #stime = dt.datetime(2012,12,31)
+    #etime = dt.datetime(2012,12,31, 1, 0)
+
 
     rad = "fhe"
     #rad = "ade"
@@ -328,7 +337,7 @@ def main():
     # Convert dmap format to csv
     #fname = "./data/tmp/20121231.000000.20130101.000000.fhe.fitacf"
     print("Converting from dmap format to csv")
-    fname_csv = dmap_to_csv(fname, tmpdir, stime=stime, etime=etime, sep=csv_sep,
+    fname_csv = dmap_to_csv(fname, stime, etime=etime, sep=csv_sep,
                             fileType=ftype)
 
     return fname_csv
