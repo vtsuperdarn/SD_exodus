@@ -207,7 +207,7 @@ def dmap_to_csv(fname, stime, etime=None, sep="|",
             if(myPtr.sTime <= myBeam.time):
 
 		# Params in myBeam
-                time = str(myBeam.time)
+                time = str(myBeam.time).split(".")[0]    # Remove millisecond part
                 bmnum = str(myBeam.bmnum)
                 stid = str(myBeam.stid)
                 cp = str(myBeam.cp)
@@ -257,7 +257,7 @@ def dmap_to_csv(fname, stime, etime=None, sep="|",
 		inttsc = str(myBeam.prm.inttsc)
 		inttus = str(myBeam.prm.inttus)
 		lagfr = str(myBeam.prm.lagfr)
-		ltab = str(myBeam.prm.ltab)
+                ltab = "[]" if myBeam.prm.ltab is None else str(myBeam.prm.ltab)
 		mpinc = str(myBeam.prm.mpinc)
 		mplgexs = str(myBeam.prm.mplgexs)
 		mplgs = str(myBeam.prm.mplgs)
