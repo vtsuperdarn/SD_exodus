@@ -32,6 +32,7 @@ def csv_to_dict(fname, stime=None, etime=None, sep="|"):
     """
 
     # Load to a pandas dataframe
+    print("Loading csv file to pandas dataframe")
     date_parser = lambda x: dt.datetime.strptime(x, "%Y-%m-%d %H:%M:%S")
     df = pd.read_csv(fname, sep=sep, na_values="None",
                      parse_dates=['time'],
@@ -43,6 +44,7 @@ def csv_to_dict(fname, stime=None, etime=None, sep="|"):
         df = df.loc[df.time <= etime, :]
 
     # Convert to a dict
+    print("Converting pandas dataframe to dict")
     data_dict = df.to_dict(orient="list")
 
     # Convert a string representation of list to a list 
@@ -52,7 +54,7 @@ def csv_to_dict(fname, stime=None, etime=None, sep="|"):
                 "v_e", "w_l", "w_l_e", "w_s", "w_s_e"]
 
     keys_list = prm_keys + fit_keys
-    print("string representation of lists to normal lists")
+    print("Converting string representation of lists to normal lists")
     for ky in keys_list:
         data_dict[ky] = [ast.literal_eval(x) for x in data_dict[ky]]
 
@@ -73,7 +75,6 @@ def main():
     csv_sep = "|"    # Delimiter to use
 
     # Convert dmap format to csv
-    print("Loading data in csv to a dictionary")
     fname = "./data/tmp/20121231.000000.20130101.000000.fhe.fitacf.csv"
     data_dict = csv_to_dict(fname, stime=stime, etime=etime, sep=csv_sep)
 
