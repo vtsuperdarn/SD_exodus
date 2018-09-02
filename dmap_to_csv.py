@@ -4,8 +4,9 @@ Written by Muhammad on 09/01/2018
 
 import datetime as dt
 from davitpy.pydarn.sdio.fetchUtils import fetch_local_files
-from davitpy.pydarn.sdio import radDataOpen, radDataReadRec
+from davitpy.pydarn.sdio import radDataPtr, radDataReadRec
 from davitpy.pydarn.sdio import radDataPtr
+from davitpy import pydarn
 import logging
 import os
 import string
@@ -65,10 +66,13 @@ def fetch_concat(ctr_date, localdirfmt, localdict, tmpdir, fnamefmt,
     # fetch the data for a given day
     file_list = fetch_local_files(stime, etime, localdirfmt, localdict, tmpdir, fnamefmt)
 
+    # Make sure all the fetched files have desired ftype
+    file_list = [x for x in file_list if ftype in x]
+
     # check if we have found files
     if len(file_list) != 0:
         # concatenate the files into a single file
-        print('Concatenating all the files into one')
+        print("Concatenating all the " + ftype + " files into one")
 
         # choose a temp file name with time span info for cacheing
         if (channel is None) or (channel == "."):
@@ -89,7 +93,7 @@ def fetch_concat(ctr_date, localdirfmt, localdict, tmpdir, fnamefmt,
 
         # remove the unneeded files from the tmpdir
         if remove_extra_file:
-            print("removing unneeded files")
+            print("removing unneeded " + ftype + " files")
             for fn in file_list:
                 logging.debug('rm ' + fn)
                 os.system('rm ' + fn)
@@ -144,6 +148,148 @@ def boxcar_filter(fname, path_to_filter):
         ffname = None
     return ffname
 
+
+def dmap_to_csv(fname, tmpdir, stime=None, etime=None, sep="|",
+                fileType="fitacf"):
+
+    """Reads data from the dmap file and writes it to
+    csv file.
+
+    Parameter
+    ---------
+    tbands : list
+        a list of the frequency bands to separate data into
+    bmnum_list : list, default to None
+        The beam numbers.
+
+    Returns
+    -------
+    fname_csv : str 
+        Full path (including the file name) of a csv file
+
+    """
+
+    # Get a file poiter
+    myPtr = radDataPtr(sTime=stime, eTime=etime, fileName=fname, fileType=fileType)
+
+    # Parameter names in a fitacf file
+    header = ",".join(["time", "bmnum", "channel", "stid", "cp", "lmfit" , "fitex",
+                       "exflg", "iqflg", "offset", "lmflg", "rawflg", "fType",
+                       "acflg", "fitacf",                 # upto here are params in myBeam
+                       "elv", "gflg", "nlag", "npnts", "p_l", "p_l_e", "p_s",
+                       "p_s_e", "phi0", "phi0_e", "pwr0", "qflg", "slist", "v",
+                       "v_e", "w_l", "w_l_e", "w_s", "w_s_e",  # upto here are params in myBeam.fit
+                       "bmazm", "frang", "ifmode", "inttsc", "inttus", "lagfr",
+                       "ltab", "mpinc", "mplgexs", "mplgs", "mppul", "nave", "noisemean",
+                       "noisesearch", "noisesky", "nrang", "ptab", "rsep", "rxrise",
+                       "scan", "smsep", "tfreq", "txpl", "xcf"]) # upto here are params in myBeam.prm
+
+    # Output file name
+    fname_csv = fname + ".csv"
+
+    # Read the parameters of interest.
+    try:
+        myPtr.rewind()
+    except Exception as e:
+        logging.error(e)
+
+    myBeam = myPtr.readRec()
+    with open(fname_csv, "w") as f:
+        f.write(header)
+        while(myBeam is not None):
+            if(myBeam.time > myPtr.eTime): break
+            if(myPtr.sTime <= myBeam.time):
+
+		# Params in myBeam
+                time = str(myBeam.time)
+                bmnum = str(myBeam.bmnum)
+                stid = str(myBeam.stid)
+                cp = str(myBeam.cp)
+                channel = str(myBeam.channel)
+		lmfit = str(myBeam.lmfit)
+		fitex = str(myBeam.fitex)
+		exflg = str(myBeam.exflg)
+		iqflg = str(myBeam.iqflg)
+		offset = str(myBeam.offset)
+		lmflg = str(myBeam.lmflg)
+		rawflg = str(myBeam.rawflg)
+		fType = str(myBeam.fType)
+		acflg = str(myBeam.acflg)
+		fitacf = str(myBeam.fitacf)
+
+                # Params in myBeam.fit
+                elv = str(myBeam.fit.elv)
+                gflg = str(myBeam.fit.gflg)
+                nlag = str(myBeam.fit.nlag)
+                npnts = str(myBeam.fit.npnts)
+                p_l = str(myBeam.fit.p_l)
+                p_l_e = str(myBeam.fit.p_l_e)
+                p_s = str(myBeam.fit.p_s)
+                p_s_e = str(myBeam.fit.p_s_e)
+                phi0 = str(myBeam.fit.phi0)
+                phi0_e = str(myBeam.fit.phi0_e)
+                pwr0 = str(myBeam.fit.pwr0)
+                qflg = str(myBeam.fit.qflg)
+                slist = str(myBeam.fit.slist)
+                v = str(myBeam.fit.v)
+                v_e = str(myBeam.fit.v_e)
+                w_l = str(myBeam.fit.w_l)
+                w_l_e = str(myBeam.fit.w_l_e)
+                w_s = str(myBeam.fit.w_s)
+                w_s_e = str(myBeam.fit.w_s_e)
+
+                # Params in myBeam.prm
+		bmazm = str(myBeam.prm.bmazm)
+		frang = str(myBeam.prm.frang)
+		ifmode = str(myBeam.prm.ifmode)
+		inttsc = str(myBeam.prm.inttsc)
+		inttus = str(myBeam.prm.inttus)
+		lagfr = str(myBeam.prm.lagfr)
+		ltab = str(myBeam.prm.ltab)
+		mpinc = str(myBeam.prm.mpinc)
+		mplgexs = str(myBeam.prm.mplgexs)
+		mplgs = str(myBeam.prm.mplgs)
+		mppul = str(myBeam.prm.mppul)
+		nave = str(myBeam.prm.nave)
+		noisemean = str(myBeam.prm.noisemean)
+		noisesearch = str(myBeam.prm.noisesearch)
+		noisesky = str(myBeam.prm.noisesky)
+		nrang = str(myBeam.prm.nrang)
+		ptab = str(myBeam.prm.ptab)
+		rsep = str(myBeam.prm.rsep)
+		rxrise = str(myBeam.prm.rxrise)
+		scan = str(myBeam.prm.scan)
+		smsep = str(myBeam.prm.smsep)
+		tfreq = str(myBeam.prm.tfreq)
+		txpl = str(myBeam.prm.txpl)
+		xcf = str(myBeam.prm.xcf)
+
+
+                # Params in myBeam.rawacf
+
+                # Params in myBeam.iqdat
+
+                # Params in myBeam.fPtr
+
+		
+                # Write the current lbeam record to fname_csv
+                line = sep.join([time, bmnum, channel, stid, cp, lmfit , fitex,
+                                 exflg, iqflg, offset, lmflg, rawflg, fType,
+                                 acflg, fitacf,                 # upto here are params in myBeam
+                                 elv, gflg, nlag, npnts, p_l, p_l_e, p_s,
+                                 p_s_e, phi0, phi0_e, pwr0, qflg, slist, v,
+                                 v_e, w_l, w_l_e, w_s, w_s_e,   # upto here are params in myBeam.fit
+                                 bmazm, frang, ifmode, inttsc, inttus, lagfr,
+                                 ltab, mpinc, mplgexs, mplgs, mppul, nave, noisemean,
+                                 noisesearch, noisesky, nrang, ptab, rsep, rxrise,
+                                 scan, smsep, tfreq, txpl, xcf]) # upto here are params in myBeam.prm
+                f.write(line)
+
+	    # Read the next beam record
+            myBeam = myPtr.readRec()
+
+    return fname_csv
+
 # run the code
 def main():
 
@@ -152,10 +298,15 @@ def main():
 
     # input parameters
     ctr_date = dt.datetime(2012,12,31)
+    stime = dt.datetime(2012,12,31)
+    etime = dt.datetime(2012,12,31, 12, 0)
+
     rad = "fhe"
     #rad = "ade"
     channel = "."
     ftype = "fitacf"
+
+    csv_sep = "|"    # used to seperate variables in a csv file
 
     remove_extra_file = True 
     median_filter=False
@@ -172,7 +323,15 @@ def main():
                          remove_extra_file=remove_extra_file,
 			 median_filter=median_filter,
 			 path_to_filter=path_to_filter)
-    return fname
+
+
+    # Convert dmap format to csv
+    #fname = "./data/tmp/20121231.000000.20130101.000000.fhe.fitacf"
+    print("Converting from dmap format to csv")
+    fname_csv = dmap_to_csv(fname, tmpdir, stime=stime, etime=etime, sep=csv_sep,
+                            fileType=ftype)
+
+    return fname_csv
 
 if __name__ == "__main__":
     fname = main()
