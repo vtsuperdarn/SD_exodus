@@ -109,7 +109,7 @@ def fetch_concat(ctr_date, localdirfmt, localdict, tmpdir, fnamefmt,
     return fname
 
 def boxcar_filter(fname, path_to_filter):
-    """Does boxcar filtering to data in a file
+    """Does boxcar median filtering to data in a file.
 
     Parameters
     -----------
@@ -152,8 +152,8 @@ def boxcar_filter(fname, path_to_filter):
 def dmap_to_csv(fname, stime, etime=None, sep="|",
                 fileType="fitacf"):
 
-    """Reads data from the dmap file and writes it to
-    csv file.
+    """Reads data from a dmap file and writes it to
+    a csv file.
 
     Parameter
     ---------
@@ -224,25 +224,25 @@ def dmap_to_csv(fname, stime, etime=None, sep="|",
 		fitacf = str(myBeam.fitacf)
 
                 # Params in myBeam.fit
-                elv = str(myBeam.fit.elv)
-                gflg = str(myBeam.fit.gflg)
-                nlag = str(myBeam.fit.nlag)
+                elv = "[]" if myBeam.fit.elv is None else str(myBeam.fit.elv) 
+                gflg = "[]" if myBeam.fit.gflg is None else str(myBeam.fit.gflg)
+                nlag = "[]" if myBeam.fit.nlag is None else str(myBeam.fit.nlag)
                 npnts = str(myBeam.fit.npnts)
-                p_l = str(myBeam.fit.p_l)
-                p_l_e = str(myBeam.fit.p_l_e)
-                p_s = str(myBeam.fit.p_s)
-                p_s_e = str(myBeam.fit.p_s_e)
-                phi0 = str(myBeam.fit.phi0)
-                phi0_e = str(myBeam.fit.phi0_e)
-                pwr0 = str(myBeam.fit.pwr0)
-                qflg = str(myBeam.fit.qflg)
+                p_l = "[]" if myBeam.fit.p_l is None else str(myBeam.fit.p_l)
+                p_l_e = "[]" if myBeam.fit.p_l_e is None else str(myBeam.fit.p_l_e)
+                p_s = "[]" if myBeam.fit.p_s is None else str(myBeam.fit.p_s)
+                p_s_e = "[]" if myBeam.fit.p_s_e is None else str(myBeam.fit.p_s_e)
+                phi0 = "[]" if myBeam.fit.phi0 is None else str(myBeam.fit.phi0)
+                phi0_e = "[]" if myBeam.fit.phi0_e is None else str(myBeam.fit.phi0_e)
+                pwr0 = "[]" if myBeam.fit.pwr0 is None else str(myBeam.fit.pwr0)
+                qflg = "[]" if myBeam.fit.qflg is None else str(myBeam.fit.qflg)
                 slist = str(myBeam.fit.slist)
-                v = str(myBeam.fit.v)
-                v_e = str(myBeam.fit.v_e)
-                w_l = str(myBeam.fit.w_l)
-                w_l_e = str(myBeam.fit.w_l_e)
-                w_s = str(myBeam.fit.w_s)
-                w_s_e = str(myBeam.fit.w_s_e)
+                v = "[]" if myBeam.fit.v is None else str(myBeam.fit.v)
+                v_e = "[]" if myBeam.fit.v_e is None else str(myBeam.fit.v_e)
+                w_l = "[]" if myBeam.fit.w_l is None else str(myBeam.fit.w_l)
+                w_l_e = "[]" if myBeam.fit.w_l_e is None else str(myBeam.fit.w_l_e)
+                w_s = "[]" if myBeam.fit.w_s is None else str(myBeam.fit.w_s)
+                w_s_e = "[]" if myBeam.fit.w_s_e is None else str(myBeam.fit.w_s_e)
 
                 # Params in myBeam.prm
 		bmazm = str(myBeam.prm.bmazm)
@@ -261,7 +261,7 @@ def dmap_to_csv(fname, stime, etime=None, sep="|",
 		noisesearch = str(myBeam.prm.noisesearch)
 		noisesky = str(myBeam.prm.noisesky)
 		nrang = str(myBeam.prm.nrang)
-		ptab = str(myBeam.prm.ptab)
+		ptab = "[]" if myBeam.prm.ptab is None else  str(myBeam.prm.ptab)
 		rsep = str(myBeam.prm.rsep)
 		rxrise = str(myBeam.prm.rxrise)
 		scan = str(myBeam.prm.scan)
