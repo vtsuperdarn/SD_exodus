@@ -52,8 +52,8 @@ def csv_to_dict(fname, stime=None, etime=None, sep="|"):
                 "v_e", "w_l", "w_l_e", "w_s", "w_s_e"]
 
     keys_list = prm_keys + fit_keys
+    print("string representation of lists to normal lists")
     for ky in keys_list:
-        print(ky)
         data_dict[ky] = [ast.literal_eval(x) for x in data_dict[ky]]
 
     return data_dict
