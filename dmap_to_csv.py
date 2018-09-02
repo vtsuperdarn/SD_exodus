@@ -179,7 +179,7 @@ def dmap_to_csv(fname, stime, etime=None, sep="|",
     myPtr = radDataPtr(sTime=stime, eTime=etime, fileName=fname, fileType=fileType)
 
     # Parameter names in a fitacf file
-    header = ",".join(["time", "bmnum", "channel", "stid", "cp", "lmfit" , "fitex",
+    header = sep.join(["time", "bmnum", "channel", "stid", "cp", "lmfit" , "fitex",
                        "exflg", "iqflg", "offset", "lmflg", "rawflg", "fType",
                        "acflg", "fitacf",                 # upto here are params in myBeam
                        "elv", "gflg", "nlag", "npnts", "p_l", "p_l_e", "p_s",
@@ -201,7 +201,7 @@ def dmap_to_csv(fname, stime, etime=None, sep="|",
 
     myBeam = myPtr.readRec()
     with open(fname_csv, "w") as f:
-        f.write(header)
+        f.write(header +"\n")
         while(myBeam is not None):
             if(myBeam.time > myPtr.eTime): break
             if(myPtr.sTime <= myBeam.time):
@@ -272,10 +272,13 @@ def dmap_to_csv(fname, stime, etime=None, sep="|",
 
 
                 # Params in myBeam.rawacf
+                #NOTE: add if needed
 
                 # Params in myBeam.iqdat
+                #NOTE: add if needed
 
                 # Params in myBeam.fPtr
+                #NOTE: add if needed
 
 		
                 # Write the current lbeam record to fname_csv
@@ -289,7 +292,7 @@ def dmap_to_csv(fname, stime, etime=None, sep="|",
                                  ltab, mpinc, mplgexs, mplgs, mppul, nave, noisemean,
                                  noisesearch, noisesky, nrang, ptab, rsep, rxrise,
                                  scan, smsep, tfreq, txpl, xcf]) # upto here are params in myBeam.prm
-                f.write(line)
+                f.write(line +"\n")
 
 	    # Read the next beam record
             myBeam = myPtr.readRec()
