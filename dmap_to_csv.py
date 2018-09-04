@@ -10,6 +10,7 @@ from davitpy import pydarn
 import logging
 import os
 import string
+from time import clock
 import numpy as np
 
 def fetch_concat(ctr_date, localdirfmt, localdict, tmpdir, fnamefmt,
@@ -150,11 +151,11 @@ def boxcar_filter(fname, path_to_filter):
 
 
 def dmap_to_csv(fname, stime, etime=None, sep="|",
-                fileType="fitacf"):
+                fileType="fitacf", readOnly=False):
 
+   
     """Reads data from a dmap file and writes it to
     a csv file.
-
     Parameter
     ---------
     fname : str
@@ -167,12 +168,10 @@ def dmap_to_csv(fname, stime, etime=None, sep="|",
         Delimiter to use
     fileType : str
         SuperDARN fit data type (e.g., fitacf)
-
     Returns
     -------
     fname_csv : str 
         Full path (including the file name) of a csv file
-
     """
 
     # Get a file poiter
@@ -206,22 +205,22 @@ def dmap_to_csv(fname, stime, etime=None, sep="|",
             if(myBeam.time > myPtr.eTime): break
             if(myPtr.sTime <= myBeam.time):
 
-		# Params in myBeam
+                # Params in myBeam
                 time = str(myBeam.time).split(".")[0]    # Remove millisecond part
                 bmnum = str(myBeam.bmnum)
                 stid = str(myBeam.stid)
                 cp = str(myBeam.cp)
                 channel = str(myBeam.channel)
-		lmfit = str(myBeam.lmfit)
-		fitex = str(myBeam.fitex)
-		exflg = str(myBeam.exflg)
-		iqflg = str(myBeam.iqflg)
-		offset = str(myBeam.offset)
-		lmflg = str(myBeam.lmflg)
-		rawflg = str(myBeam.rawflg)
-		fType = str(myBeam.fType)
-		acflg = str(myBeam.acflg)
-		fitacf = str(myBeam.fitacf)
+                lmfit = str(myBeam.lmfit)
+                fitex = str(myBeam.fitex)
+                exflg = str(myBeam.exflg)
+                iqflg = str(myBeam.iqflg)
+                offset = str(myBeam.offset)
+                lmflg = str(myBeam.lmflg)
+                rawflg = str(myBeam.rawflg)
+                fType = str(myBeam.fType)
+                acflg = str(myBeam.acflg)
+                fitacf = str(myBeam.fitacf)
 
                 # Params in myBeam.fit
                 elv = "[]" if myBeam.fit.elv is None else str(myBeam.fit.elv) 
@@ -251,30 +250,30 @@ def dmap_to_csv(fname, stime, etime=None, sep="|",
                 w_s_e = w_s_e.replace("inf", "999999")
 
                 # Params in myBeam.prm
-		bmazm = str(myBeam.prm.bmazm)
-		frang = str(myBeam.prm.frang)
-		ifmode = str(myBeam.prm.ifmode)
-		inttsc = str(myBeam.prm.inttsc)
-		inttus = str(myBeam.prm.inttus)
-		lagfr = str(myBeam.prm.lagfr)
+                bmazm = str(myBeam.prm.bmazm)
+                frang = str(myBeam.prm.frang)
+                ifmode = str(myBeam.prm.ifmode)
+                inttsc = str(myBeam.prm.inttsc)
+                inttus = str(myBeam.prm.inttus)
+                lagfr = str(myBeam.prm.lagfr)
                 ltab = "[]" if myBeam.prm.ltab is None else str(myBeam.prm.ltab)
-		mpinc = str(myBeam.prm.mpinc)
-		mplgexs = str(myBeam.prm.mplgexs)
-		mplgs = str(myBeam.prm.mplgs)
-		mppul = str(myBeam.prm.mppul)
-		nave = str(myBeam.prm.nave)
-		noisemean = str(myBeam.prm.noisemean)
-		noisesearch = str(myBeam.prm.noisesearch)
-		noisesky = str(myBeam.prm.noisesky)
-		nrang = str(myBeam.prm.nrang)
-		ptab = "[]" if myBeam.prm.ptab is None else  str(myBeam.prm.ptab)
-		rsep = str(myBeam.prm.rsep)
-		rxrise = str(myBeam.prm.rxrise)
-		scan = str(myBeam.prm.scan)
-		smsep = str(myBeam.prm.smsep)
-		tfreq = str(myBeam.prm.tfreq)
-		txpl = str(myBeam.prm.txpl)
-		xcf = str(myBeam.prm.xcf)
+                mpinc = str(myBeam.prm.mpinc)
+                mplgexs = str(myBeam.prm.mplgexs)
+                mplgs = str(myBeam.prm.mplgs)
+                mppul = str(myBeam.prm.mppul)
+                nave = str(myBeam.prm.nave)
+                noisemean = str(myBeam.prm.noisemean)
+                noisesearch = str(myBeam.prm.noisesearch)
+                noisesky = str(myBeam.prm.noisesky)
+                nrang = str(myBeam.prm.nrang)
+                ptab = "[]" if myBeam.prm.ptab is None else  str(myBeam.prm.ptab)
+                rsep = str(myBeam.prm.rsep)
+                rxrise = str(myBeam.prm.rxrise)
+                scan = str(myBeam.prm.scan)
+                smsep = str(myBeam.prm.smsep)
+                tfreq = str(myBeam.prm.tfreq)
+                txpl = str(myBeam.prm.txpl)
+                xcf = str(myBeam.prm.xcf)
 
 
                 # Params in myBeam.rawacf
@@ -286,7 +285,7 @@ def dmap_to_csv(fname, stime, etime=None, sep="|",
                 # Params in myBeam.fPtr
                 #NOTE: add if needed
 
-		
+
                 # Write the current lbeam record to fname_csv
                 line = sep.join([time, bmnum, channel, stid, cp, lmfit , fitex,
                                  exflg, iqflg, offset, lmflg, rawflg, fType,
@@ -300,29 +299,29 @@ def dmap_to_csv(fname, stime, etime=None, sep="|",
                                  scan, smsep, tfreq, txpl, xcf]) # upto here are params in myBeam.prm
                 f.write(line +"\n")
 
-	    # Read the next beam record
+            # Read the next beam record
             myBeam = myPtr.readRec()
 
     return fname_csv
 
 # run the code
-def main():
+def main(inpStartTime, inpRad, inpFtype="fitacf",inpEndTime=None):
 
     # Set the logging level
     logging.getLogger().setLevel(logging.WARNING)
 
     # input parameters
-    ctr_date = dt.datetime(2012,12,31)
-    stime = ctr_date
-    etime = None
+    ctr_date = inpStartTime#dt.datetime(2012,12,31)
+    stime = inpStartTime#ctr_date
+    etime = inpEndTime#None
     #stime = dt.datetime(2012,12,31)
     #etime = dt.datetime(2012,12,31, 1, 0)
 
 
-    rad = "fhe"
+    rad = inpRad#"fhe"
     #rad = "ade"
     channel = "."
-    ftype = "fitacf"
+    ftype = inpFtype#"fitacf"
 
     csv_sep = "|"    # used to seperate variables in a csv file
 
@@ -332,7 +331,7 @@ def main():
 
     localdirfmt = "/sd-data/{year}/{ftype}/{radar}/"
     localdict = {"ftype" : ftype, "radar" : rad, "channel" : channel}
-    tmpdir = "./data/tmp/"
+    tmpdir = "/tmp/"#"./data/tmp/"
     fnamefmt = ['{date}.{hour}......{radar}.{channel}.{ftype}',\
                 '{date}.{hour}......{radar}.{ftype}']
 
