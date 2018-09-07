@@ -12,7 +12,7 @@ if module_path not in sys.path:
     sys.path.append(module_path)
 import dmap_to_csv
 import generate_parquet_files
-
+import generate_hdf5_files
 
 class CreateFiles(object):
     """
@@ -60,6 +60,16 @@ class CreateFiles(object):
         pqObj.create_parquet_file(paTab, outParquetFile,\
                  compression=compression,version=version)
 
+    def create_hdf5_files(self, hdf5OutDir):
+        """
+        Generate hdf5 files from fitacf data
+        """
+        hdf5Obj = generate_hdf5_files.HDF5Converter(self.startTime,\
+                         self.endTime, self.inpRad)
+        fData = hdf5Obj.get_dmap_dicts()
+        outFile = hdf5OutDir + self.startTime.strftime("%Y%m%d") +\
+                         "."+self.inpRad + ".hdf5"
+        hdf5Obj.create_hdf5_file(fData, outFile)
 
 if __name__ == "__main__":
     sDate = datetime.datetime(2012,6,1)
