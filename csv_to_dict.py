@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import ast
 
-def csv_to_dict(fname, stime=None, etime=None, sep="|"):
+def csv_to_dict(fname, stime=None, etime=None, sep="|", orient="list"):
 
     """Reads data from a csv file and returns a dictionary.
 
@@ -45,8 +45,14 @@ def csv_to_dict(fname, stime=None, etime=None, sep="|"):
 
     # Convert to a dict
     print("Converting pandas dataframe to dict")
+    # NOTE We'll use list orientation even though
+    # we need records orientation because some of 
+    # the columns from the DF are lists which 
+    # get interpreted as strings by pandas
+    # and it becomes messy, this is a simple 
+    # method Muhammad deviced and I'm building on it.
     data_dict = df.to_dict(orient="list")
-
+    print df["ptab"].dtypes
     # Convert a string representation of list to a list 
     prm_keys = ["ptab", "ltab"]
     fit_keys = ["elv", "gflg", "nlag", "p_l", "p_l_e", "p_s",
@@ -57,17 +63,21 @@ def csv_to_dict(fname, stime=None, etime=None, sep="|"):
     print("Converting string representation of lists to normal lists")
     for ky in keys_list:
         data_dict[ky] = [ast.literal_eval(x) for x in data_dict[ky]]
-#        for x in data_dict[ky]:
-#            try:
-#                ast.literal_eval(x)
-#            except:
-#                import pdb
-#                pdb.set_trace()
+        for x in data_dict[ky]:
+            try:
+                ast.literal_eval(x)
+            except:
+                import pdb
+                pdb.set_trace()
 
+#    # if we need a list of dicts conver the dict of lists to the format
+#    if orient == "records":
+#        listDict = [dict(zip(data_dict,t)) for t in zip(*data_dict.values())]
+#        return listDict
     return data_dict
 
 # run the code
-def main():
+def main(orient="list"):
 
     # Set the logging level
     logging.getLogger().setLevel(logging.WARNING)
@@ -85,7 +95,8 @@ def main():
     #fname = fdir + "20121231.000000.20130101.000000.fhe.fitacf.csv"
     fname = fdir + "20130110.180000.20130111.180000.bks.fitacf.csv"
 
-    data_dict = csv_to_dict(fname, stime=stime, etime=etime, sep=csv_sep)
+    #data_dict = csv_to_dict(fname, stime=stime, etime=etime, sep=csv_sep)
+    data_dict = csv_to_dict(fname, stime=stime, etime=etime, sep=csv_sep, orient=orient)
 
     return data_dict
 
