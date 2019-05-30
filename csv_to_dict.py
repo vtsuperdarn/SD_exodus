@@ -57,6 +57,12 @@ def csv_to_dict(fname, stime=None, etime=None, sep="|"):
     print("Converting string representation of lists to normal lists")
     for ky in keys_list:
         data_dict[ky] = [ast.literal_eval(x) for x in data_dict[ky]]
+#        for x in data_dict[ky]:
+#            try:
+#                ast.literal_eval(x)
+#            except:
+#                import pdb
+#                pdb.set_trace()
 
     return data_dict
 
@@ -75,7 +81,10 @@ def main():
     csv_sep = "|"    # Delimiter to use
 
     # Convert dmap format to csv
-    fname = "./data/tmp/20121231.000000.20130101.000000.fhe.fitacf.csv"
+    fdir = "./data/tmp/"
+    #fname = fdir + "20121231.000000.20130101.000000.fhe.fitacf.csv"
+    fname = fdir + "20130110.180000.20130111.180000.bks.fitacf.csv"
+
     data_dict = csv_to_dict(fname, stime=stime, etime=etime, sep=csv_sep)
 
     return data_dict

@@ -244,9 +244,11 @@ def dmap_to_csv(fname, stime, etime=None, sep="|",
                 v_e = "[]" if myBeam.fit.v_e is None else str(myBeam.fit.v_e)
                 v_e = v_e.replace("inf", "999999")
                 w_l = "[]" if myBeam.fit.w_l is None else str(myBeam.fit.w_l)
+                w_l = w_l.replace("inf", "999999")
                 w_l_e = "[]" if myBeam.fit.w_l_e is None else str(myBeam.fit.w_l_e)
                 w_l_e = w_l_e.replace("inf", "999999")
                 w_s = "[]" if myBeam.fit.w_s is None else str(myBeam.fit.w_s)
+                w_s = w_s.replace("inf", "999999")
                 w_s_e = "[]" if myBeam.fit.w_s_e is None else str(myBeam.fit.w_s_e)
                 w_s_e = w_s_e.replace("inf", "999999")
 
@@ -312,14 +314,17 @@ def main():
     logging.getLogger().setLevel(logging.WARNING)
 
     # input parameters
-    ctr_date = dt.datetime(2012,12,31)
+    #ctr_date = dt.datetime(2012,12,31)
+    ctr_date = dt.datetime(2014,11,2)
     stime = ctr_date
-    etime = None
+    etime = ctr_date + dt.timedelta(days=1)
+    #etime = None
     #stime = dt.datetime(2012,12,31)
     #etime = dt.datetime(2012,12,31, 1, 0)
 
 
-    rad = "fhe"
+    #rad = "fhe"
+    rad = "bks"
     #rad = "ade"
     channel = "."
     ftype = "fitacf"
