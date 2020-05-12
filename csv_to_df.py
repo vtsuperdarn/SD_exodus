@@ -22,7 +22,10 @@ csv_sep = "|"    # Delimiter to use
 fdir = "./data/tmp/"
 #fname = fdir + "20130109.180000.20130110.180000.bks.fitacf.csv"
 #fname = fdir + "20130110.180000.20130111.180000.fhe.fitacf.csv"
-fname = fdir + "20141102.000000.20141103.000000.bks.fitacf.csv"
+#fname = fdir + "20141102.000000.20141103.000000.bks.fitacf.csv"
+#fname = fdir + "20121231.000000.20130101.000000.fhe.fitacf.csv"
+#fname = fdir + "20121204.000000.20121205.000000.bks.fitacf.csv"
+fname = fdir + "20121205.000000.20121206.000000.bks.fitacf.csv"
 fname_out = fname[:-4] + ".vel" +".csv"
 
 data_dict = csv_to_dict(fname, stime=stime, etime=etime, sep=csv_sep)

@@ -3,15 +3,284 @@ Written by Muhammad on 09/01/2018
 """
 
 import datetime as dt
-from davitpy.pydarn.sdio.fetchUtils import fetch_local_files
+#from davitpy.pydarn.sdio.fetchUtils import fetch_local_files
 from davitpy.pydarn.sdio import radDataPtr, radDataReadRec
 from davitpy.pydarn.sdio import radDataPtr
 from davitpy import pydarn
 import logging
 import os
+import glob
 import string
 from time import clock
 import numpy as np
+from dateutil.relativedelta import relativedelta
+
+def uncompress_file(filename, outname=None, remove=False):
+    """
+    A function to perform an appropriate type of uncompression on a specified 
+    file.  Current extensions include: bz2, gz, zip. This function does not 
+    removed the compressed file. Requires bunzip2, gunzip, and unzip to be 
+    installed.
+    Parameters
+    -----------
+    filename : (str)
+        Name of the compressed file
+    outname : (NoneType/str)
+        Compressed name of the desired output file (allows uncompressed file to
+        be placed in a different location) or None (if the uncompressed file
+        will stay in the same directory).  (default=None)
+    remove : (bool)
+        Remove compressed file after uncompression (default=False)
+    Returns
+    ---------
+    outname : (NoneType/str)
+        name of uncompressed file or None if the command was unsuccessful or
+        the compression method could not be determined
+    """
+    import os
+
+    # Check the inputs
+    assert isinstance(filename, str), logging.error('filename must be a string')
+    assert isinstance(outname, (str, type(None))), \
+        logging.error('outname must be a string or None')
+    assert isinstance(remove, bool), \
+        logging.error('remove status must be Boolian')
+
+    command = None  # Initialize command as None. It will be updated 
+                    # if a known file compression is found.
+
+    if outname is None:
+        outname = filename
+
+    if filename.find('.bz2') != -1:
+        outname = outname.replace('.bz2', '')
+        command = 'bunzip2 -c ' + filename + ' > ' + outname
+    elif filename.find('.gz') != -1:
+        outname = outname.replace('.gz', '')
+        command = 'gunzip -c ' + filename + ' > ' + outname
+    elif filename.find('.zip') != -1:
+        outname = outname.replace('.zip', '')
+        command = 'unzip -c ' + filename + ' > ' + outname
+    #elif filename.find('.tar') != -1:
+    #    outname = outname.replace('.tar', '')
+    #    command = 'tar -xf ' + filename
+
+    if command is not None:
+        try:
+            os.system(command)
+            logging.info("performed [{:s}]".format(command))
+        except:
+            logging.warning("unable to perform [{:s}]".format(command))
+            # Returning None instead of setting outname=None to avoid
+            # messing with inputted outname variable
+            return None
+
+        if remove:
+            command = 'rm {:s}'.format(filename)
+
+            try:
+                os.system(command)
+                logging.info("performed [{:s}]".format(command))
+            except:
+                logging.warning("unable to perform [{:s}]".format(command))
+    else:
+        return None
+        estr = "unknown compression type for [{:s}]".format(filename)
+        logging.warning(estr)
+
+    return outname
+
+def fetch_local_files(stime, etime, localdirfmt, localdict, outdir, fnamefmt,
+                      back_time=relativedelta(years=1), remove=False):
+
+    """
+    A routine to locate and retrieve file names from locally stored SuperDARN 
+    radar files that fit the input criteria.
+    Example
+    -------
+    Fetches one locally stored fitacf file stored in a directory structure
+    given by localdirfmt. The file name format is specified by the fnamefmt 
+    arguement.
+    ::
+        from pydarn.sdio import fetchUtils
+        import datetime as dt
+        import os
+        filelist = fetchUtils.fetch_local_files(dt.datetime(2002,6,20), \
+            dt.datetime(2002,6,21), '/sd-data/{year}/{month}/', \
+            {'ftype':'fitacf'}, \
+            "/tmp/sd/",'{date}.{hour}......{radar}.{channel}.{ftype}')
+    Parameters
+    ------------
+    stime : (datetime)
+        data starting time
+    etime : (datetime)
+        data ending time
+    localdirfmt : (str)
+        string defining the local directory structure
+        (eg "{ftype}/{year}/{month}/{day}/")
+    localdict : (dict)
+        Contains keys for non-time related information in remotedirfmt and
+        fnamefmt (eg remotedict={'ftype':'fitex','radar':'sas','channel':'a'})
+    outdir : (str)
+        Temporary directory in which to store uncompressed files (must end with
+        a "/")
+    fnamefmt : (str/list)
+        Optional string or list of file name formats
+        (eg fnamefmt = ['{date}.{hour}......{radar}.{channel}.{ftype}', \
+            '{date}.C0.{radar}.{ftype}'] 
+        or fnamefmt = '{date}.{hour}......{radar}.{ftype}')
+    back_time : (dateutil.relativedelta.relativedelta)
+        Time difference from stime that fetchUtils should search backwards
+        until before giving up. (default=relativedelta(years=1))
+    remove : (bool)
+        Remove compressed file after uncompression (default=False)
+    Returns
+    --------
+    file_stime : (datetime)
+        actual starting time for located files
+    filelist : (list)
+        list of uncompressed files (including path)
+    Note
+    ------
+    Weird edge case behaviour occurs when attempting to fetch all channel data
+    (e.g. localdict['channel'] = '.').
+    """
+    import os
+    import glob
+    import re
+
+    filelist = []
+    temp_filelist = []
+
+    # Test input
+    assert isinstance(stime, dt.datetime), \
+        logging.error('stime must be datetime object')
+    assert isinstance(etime,dt.datetime), \
+        logging.error('eTime must be datetime object')
+    assert isinstance(localdirfmt, str) and localdirfmt[-1] == "/", \
+        logging.error('localdirfmt must be a string ending in "/"')
+    assert isinstance(outdir, str) and outdir[-1] == "/", \
+        logging.error('outdir must be a string ending in "/"')
+    assert os.path.isdir(outdir), logging.error("outdir is not a directory")
+    assert isinstance(fnamefmt, (str, list)), \
+        logging.error('fnamefmt must be str or list')
+
+    #--------------------------------------------------------------------------
+    # If fnamefmt isn't a list, make it one.
+    if isinstance(fnamefmt,str):
+        fnamefmt = [fnamefmt]
+
+    #--------------------------------------------------------------------------
+    # Initialize the start time for the loop
+    ctime = stime.replace(second=0, microsecond=0)
+    time_reverse = 1
+    mintime = ctime - back_time
+
+    # construct a checkstruct dictionary to detect if changes in ctime
+    # lead to a change in directory to limit how often directories are listed
+    time_keys = ["year", "month", "day", "hour", "min", "date"]
+    keys_in_localdir = [x for x in time_keys if localdirfmt.find('{'+x+'}') > 0]
+
+    checkstruct = {}
+    for key in keys_in_localdir:
+        checkstruct[key] = ''
+
+    while ctime <= etime:
+        # set the temporal parts of the possible local directory structure
+        localdict["year"] = "{:04d}".format(ctime.year)
+        localdict["month"] = "{:02d}".format(ctime.month)
+        localdict["day"] = "{:02d}".format(ctime.day)
+        localdict["hour"] = ctime.strftime("%H")
+        localdict["min"] = ctime.strftime("%M")
+        localdict["date"] = ctime.strftime("%Y%m%d")
+        
+        # check for a directory change
+        dir_change = 0
+        for key in keys_in_localdir:
+            if (checkstruct[key] != localdict[key]):
+                checkstruct[key] = localdict[key]    
+                dir_change = 1
+        else:
+            # If there is no time structure to local directory structure,
+            # only the first time will need a directory change
+            if ctime <= stime:
+                dir_change = 1
+
+        # get the files in the directory if directory has changed
+        if dir_change:
+            # Local directory will be correct even if there is no date structure
+            local_dir = localdirfmt.format(**localdict)
+            try:
+                files = os.listdir(local_dir)
+            except:
+                files = []
+
+        # check to see if any files in the directory match the fnamefmt
+        for namefmt in fnamefmt:
+            # create a regular expression to check for the desired files
+            name = namefmt.format(**localdict)
+            regex = re.compile(name)
+
+            # Go thorugh all the files in the directory
+            for lf in files:
+                #if we have a file match between a file and our regex
+                if(regex.match(lf)):
+                    if lf in temp_filelist: 
+                        continue
+                    else:
+                        temp_filelist.append(lf)
+
+                    # copy the file to outdir
+                    outname = os.path.join(outdir,lf)
+                    command='cp {:s} {:s}'.format(os.path.join(local_dir, lf),
+                                                  outname)
+                    try:
+                        os.system(command)
+                        logging.info("performed [{:s}]".format(command))
+                    except:
+                        estr = "unable to perform [{:s}]".format(command)
+                        logging.warning(estr)
+
+        # Advance the cycle time by the "lowest" time increment 
+        # in the namefmt (either forward or reverse)
+        if (time_reverse == 1 and len(temp_filelist) > 0) or ctime < mintime:
+            time_reverse = 0
+            ctime = stime.replace(second=0, microsecond=0)
+
+        # Calculate if we are going forward or backward in time and set
+        # ctime accordingly
+        base_time_inc = 1 - 2 * time_reverse        
+
+        if "{min}" in namefmt:
+            ctime = ctime + relativedelta(minutes=base_time_inc)
+        elif "{hour}" in namefmt:
+            ctime = ctime + relativedelta(hours=base_time_inc)
+        elif "{date}" in namefmt or "{day}" in remotedirfmt:
+            ctime = ctime + relativedelta(days=base_time_inc)
+        elif "{month}" in namefmt:
+            ctime = ctime + relativedelta(months=base_time_inc)
+        elif "{year}" in namefmt:    
+            ctime = ctime + relativedelta(years=base_time_inc)
+
+    # Make sure the found files are in order.  Otherwise the concatenation later
+    # will put records out of order
+    temp_filelist = sorted(temp_filelist)
+
+    # attempt to unzip the files
+    for lf in temp_filelist:
+        outname = os.path.join(outdir, lf)
+        uncompressed = uncompress_file(outname, None, remove=remove)
+
+        if (type(uncompressed) is str):
+        # save name of uncompressed file for output
+            filelist.append(uncompressed)
+        else:
+        # file wasn't compressed, use outname
+            filelist.append(outname)
+
+    # Return the list of uncompressed files
+    return filelist
+
 
 def fetch_concat(ctr_date, localdirfmt, localdict, tmpdir, fnamefmt,
 		 remove_extra_file=True, median_filter=False,
@@ -65,7 +334,15 @@ def fetch_concat(ctr_date, localdirfmt, localdict, tmpdir, fnamefmt,
     channel = localdict["channel"]
 
     # fetch the data for a given day
+    #file_list = fetch_local_files(stime, etime, localdirfmt, localdict, tmpdir, fnamefmt)
+    ###################
+    # Due to a bug related to davitpy, here is a walkaround to find the list of files need
+    # Note: the .bz files have to be manually copied from sd-data to the folder defined by localdirfmt	
+
     file_list = fetch_local_files(stime, etime, localdirfmt, localdict, tmpdir, fnamefmt)
+
+    #file_list = glob.glob(os.path.join(tmpdir, '*bz2'))
+    ###################
 
     # Make sure all the fetched files have desired ftype
     file_list = [x for x in file_list if ftype in x]
@@ -314,7 +591,8 @@ def main():
 
     # input parameters
     #ctr_date = dt.datetime(2012,12,31)
-    ctr_date = dt.datetime(2014,11,2)
+    #ctr_date = dt.datetime(2014,11,02)
+    ctr_date = dt.datetime(2012,12,05)
     stime = ctr_date
     etime = ctr_date + dt.timedelta(days=1)
     #etime = None
@@ -324,7 +602,7 @@ def main():
     rad = "bks"
     #rad = "ade"
     channel = "."
-    ftype = inpFtype#"fitacf"
+    ftype = "fitacf"
 
     csv_sep = "|"    # used to seperate variables in a csv file
 
@@ -332,9 +610,11 @@ def main():
     median_filter=False
     path_to_filter = './fitexfilter'
 
-    localdirfmt = "/sd-data/{year}/{ftype}/{radar}/"
+    #localdirfmt = "/sd-data/{year}/{ftype}/{radar}/"
+    localdirfmt = "./sd-data/{year}/{ftype}/{radar}/"
+    #localdirfmt = ".data/tmp/"
     localdict = {"ftype" : ftype, "radar" : rad, "channel" : channel}
-    tmpdir = "/tmp/"#"./data/tmp/"
+    tmpdir = "./data/tmp/"
     fnamefmt = ['{date}.{hour}......{radar}.{channel}.{ftype}',\
                 '{date}.{hour}......{radar}.{ftype}']
 
@@ -347,6 +627,9 @@ def main():
 
     # Convert dmap format to csv
     #fname = "./data/tmp/20121231.000000.20130101.000000.fhe.fitacf"
+    #fname = "./data/tmp/20141101.000000.20141102.000000.bks.fitacf"
+    #fname = "./data/tmp/20121204.000000.20121205.000000.bks.fitacf"
+    #fname = "./data/tmp/20121205.000000.20121206.000000.bks.fitacf"
     print("Converting from dmap format to csv")
     fname_csv = dmap_to_csv(fname, stime, etime=etime, sep=csv_sep,
                             fileType=ftype)

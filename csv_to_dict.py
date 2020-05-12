@@ -63,12 +63,12 @@ def csv_to_dict(fname, stime=None, etime=None, sep="|", orient="list"):
     print("Converting string representation of lists to normal lists")
     for ky in keys_list:
         data_dict[ky] = [ast.literal_eval(x) for x in data_dict[ky]]
-        for x in data_dict[ky]:
-            try:
-                ast.literal_eval(x)
-            except:
-                import pdb
-                pdb.set_trace()
+        #for x in data_dict[ky]:
+        #    try:
+        #        ast.literal_eval(x)
+        #    except:
+        #        import pdb
+        #        pdb.set_trace()
 
 #    # if we need a list of dicts conver the dict of lists to the format
 #    if orient == "records":
